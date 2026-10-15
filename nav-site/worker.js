@@ -230,23 +230,38 @@ async function handleApi(request, env, url) {
 
 // ---------- Worker 入口 ----------
 
+async function handle(request, env) {
+  const url = new URL(request.url);
+  const path = url.pathname;
+
+  if (path.startsWith('/api/')) {
+    return handleApi(request, env, url);
+  }
+
+  // 受保护页面：/app.html 未登录跳回首页
+  if (path === '/app' || path === '/app.html' || path.startsWith('/app/')) {
+    const token = getCookie(request, 'session');
+    if (!token || !(await verifyToken(token, env.AUTH_SECRET))) {
+      return Response.redirect(url.origin + '/', 302);
+    }
+  }
+
+  if (!env.ASSETS) {
+    return new Response('缺少静态资产绑定(ASSETS)：请确认 wrangler.toml 中的 [assets] 配置已生效', { status: 500 });
+  }
+  return env.ASSETS.fetch(request);
+}
+
 export default {
   async fetch(request, env) {
-    const url = new URL(request.url);
-    const path = url.pathname;
-
-    if (path.startsWith('/api/')) {
-      return handleApi(request, env, url);
+    try {
+      return await handle(request, env);
+    } catch (e) {
+      const detail = (e && (e.stack || e.message)) || String(e);
+      return new Response(JSON.stringify({ error: 'Worker 异常', detail }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
-
-    // 受保护页面：/app.html 未登录跳回首页
-    if (path === '/app' || path === '/app.html' || path.startsWith('/app/')) {
-      const token = getCookie(request, 'session');
-      if (!token || !(await verifyToken(token, env.AUTH_SECRET))) {
-        return Response.redirect(url.origin + '/', 302);
-      }
-    }
-
-    return env.ASSETS.fetch(request);
   },
 };
