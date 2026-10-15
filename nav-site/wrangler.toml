@@ -14,5 +14,7 @@ run_worker_first = ["/api/*", "/app.html", "/app", "/app/*"]
 binding = "NAV_KV"
 id = "35adffea216349bcab42dc1643df3360"
 
-# AUTH_SECRET 请在控制台 Settings → Variables and Secrets 添加为 Secret，
-# 值是一段随机字符串（用来签名登录 Cookie）
+# AUTH_SECRET：签名登录 Cookie 用的密钥（内置默认值，无需去控制台配置）
+# 想更安全的话，可在控制台 Settings → 变量和机密 里添加同名 Secret，它会覆盖下面的值。
+[vars]
+AUTH_SECRET = "nav-9f3c7a21b8e4d506-a1c2b3d4e5f60718"
