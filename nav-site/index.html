@@ -80,7 +80,7 @@
       const r = await fetch(url, { credentials: 'same-origin', ...opts });
       let data = {};
       try { data = await r.json(); } catch {}
-      return { ok: r.ok, data };
+      return { ok: r.ok, status: r.status, data };
     }
 
     function setMsg(el, text, type) {
@@ -93,6 +93,10 @@
       if (me.data.authed) { location.href = '/app.html'; return; }
 
       const st = await api('/api/status');
+      if (st.status !== 200) {
+        sw.innerHTML = '⚠ 后端接口异常 (HTTP ' + st.status + ')：请检查 functions 是否已部署、KV(NAV_KV) 是否已绑定并 Redeploy';
+        return;
+      }
       const registered = !!st.data.registered;
       const regView = $('registerView');
       const loginView = $('loginView');
@@ -115,26 +119,26 @@
       e.preventDefault();
       const f = e.target;
       setMsg($('regMsg'), '注册中…');
-      const { ok, data } = await api('/api/register', {
+      const { ok, status, data } = await api('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: f.username.value, password: f.password.value }),
       });
       if (ok) location.href = '/app.html';
-      else setMsg($('regMsg'), data.error || '注册失败', 'err');
+      else setMsg($('regMsg'), (data.error || '注册失败') + ` (HTTP ${status})`, 'err');
     });
 
     $('loginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const f = e.target;
       setMsg($('loginMsg'), '登录中…');
-      const { ok, data } = await api('/api/login', {
+      const { ok, status, data } = await api('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: f.username.value, password: f.password.value }),
       });
       if (ok) location.href = '/app.html';
-      else setMsg($('loginMsg'), data.error || '登录失败', 'err');
+      else setMsg($('loginMsg'), (data.error || '登录失败') + ` (HTTP ${status})`, 'err');
     });
   </script>
 </body>
